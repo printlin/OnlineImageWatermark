@@ -28,4 +28,4 @@
 + 数字水印解析
 
 ## Star History
-![Star History Chart](https://api.star-history.com/svg?repos=printlin/OnlineImageWatermark&type=Date)
+[![Star History Chart](https://api.star-history.com/svg?repos=printlin/OnlineImageWatermark&type=Date)](https://star-history.com/#printlin/OnlineImageWatermark&Date)
