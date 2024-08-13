@@ -3,7 +3,7 @@ const LOGO_FILENAMES = ["nikon", "nikon_full", "canon", "sony", "fujifilm", "has
     "leica_red_full", "red", "red_full", "dji", "install360", "kodak", "lumix", "mamiya", "olympus", "panasonic",
     "pentax", "phaseOne", "ricoh", "rolleiflex", "sigma", "tamron", "zeiss_full"];
 const MAX_RADIUS = 500;
-const MAX_BLUR = 500;
+const MAX_BLUR = 200;
 const MAX_SHADOW = 500;
 const MAX_FONT_SIZE = 500;
 
@@ -17,11 +17,20 @@ const imgViewImg = document.getElementById('imgViewImg');
 const logoViewImg = document.getElementById('logoViewImg');
 const modelInput = document.getElementById('modelInput');
 const exifInput = document.getElementById('exifInput');
+const canvasTemp = document.getElementById('canvasTemp');
+const ctxTemp = canvasTemp.getContext('2d', { willReadFrequently: true });
 
 // 自定义变量
 const LOGO_URL_PREFIX = "./static/imgs/logo/";
 const imgConfig = {
-    canvas: null,
+    konva: {
+        stage: null,
+        layer: null,
+        containerWidth: 0,
+        containerHeight: 0,
+        fullWidth: 0,
+        fullHeight: 0,
+    },
     img: null,
     imgLoad: null,
     logoImg: null,
@@ -75,7 +84,7 @@ function init(){
         }
     });
     layui.slider.render({
-        elem: '#blurSlider', value: 30, theme: '#1548e6',
+        elem: '#blurSlider', value: 75, theme: '#1548e6',
         done: function(value){
             let newValue = value / 100 * MAX_BLUR;
             if(imgConfig.blur !== newValue){
@@ -138,48 +147,19 @@ function init(){
         logoSelectorHtml += '<div class="logo-item" onclick="logoSelected(\'' + url + '\')"><img src="' + url + '" alt="' + filename + '"></div>'
     }
 
-    // 显示默认图片
-    // imgSelected("./static/imgs/index.jpg");
-
-    const block = document.getElementById('konvaContainerBlock').getBoundingClientRect();
-    const stage = new Konva.Stage({
+    const konvaContainerBlock = document.getElementById('konvaContainerBlock').getBoundingClientRect();
+    imgConfig.konva.containerWidth = konvaContainerBlock.width;
+    imgConfig.konva.containerHeight = konvaContainerBlock.height;
+    imgConfig.konva.stage = new Konva.Stage({
         container: 'konvaContainer',
-        width: block.width,
-        height: block.height,
+        width: imgConfig.konva.containerWidth,
+        height: imgConfig.konva.containerHeight,
     });
-    const layer = new Konva.Layer();
-    stage.add(layer);
-    Konva.Image.fromURL('./static/imgs/index.jpg', function (darthNode) {
-        darthNode.setAttrs({
-            width: 5568,
-            height: 3712,
-            x: 130,
-            y: 450,
-            cornerRadius: 20,
-        });
-        layer.add(darthNode);
-        stage.scaleX(0.18)
-        stage.scaleY(0.2)
-        console.log(1)
-    });
-    // 点击图片导出功能
-    stage.on('click', () => {
-        const w = stage.width();
-        const h = stage.height();
-        stage.width(5568)
-        stage.height(3712)
-        stage.scaleX(1)
-        stage.scaleY(1)
-        const dataURL = stage.toDataURL({ pixelRatio: 1 });
-        stage.width(w)
-        stage.height(h)
-        stage.scaleX(0.2)
-        stage.scaleY(0.2)
-        const link = document.createElement('a');
-        link.href = dataURL;
-        link.download = 'image.png';
-        link.click();
-    });
+    imgConfig.konva.layer = new Konva.Layer();
+    imgConfig.konva.stage.add(imgConfig.konva.layer);
+
+    // 显示默认图片
+    imgSelected("./static/imgs/index.jpg");
 }
 
 /**
@@ -230,8 +210,11 @@ function imgSelected(url){
                 if(ISOSpeedRatings){
                     imgConfig.exifText += "ISO" + ISOSpeedRatings;
                 }
+                if(!exifInput.value && imgConfig.exifText){
+                    exifInput.value = imgConfig.exifText;
+                }
+                resolve();
             });
-            resolve();
         };
         img.onerror = () => {
             imgConfig.img = null;
@@ -289,7 +272,9 @@ function logoSelected(url){
     update();
 }
 
-
+/**
+ * 获取设置内容
+ */
 function getSetting(){
     let modelText = modelInput.value;
     let exifText = exifInput.value;
@@ -301,6 +286,9 @@ function getSetting(){
     }
 }
 
+/**
+ * 核心渲染方法
+ */
 async function update(){
     console.log("begin")
     let loadIndex = layer.load(2);
@@ -326,21 +314,56 @@ async function update(){
         let fontSize = formatNumberValue(imgConfig.fontSize, 20, MAX_FONT_SIZE, 50);
         let fontColor = formatValue(imgConfig.fontColor, "#000000");
         let font = formatValue(imgConfig.font, "DingTalkSans");
+        // konva操作对象
+        const konvaStage = imgConfig.konva.stage;
+        const konvaLayer = imgConfig.konva.layer;
 
+        // 获取原图尺寸
         let width = img.width;
         let height = img.height;
+        imgConfig.konva.fullWidth = width;
+        imgConfig.konva.fullHeight = height;
 
-        // // 如果图片高度超过1000px，等比例缩小
-        // const maxHeight = 1000;
-        // if (height > maxHeight) {
-        //     const scale = maxHeight / height;
-        //     width *= scale;
-        //     height *= scale;
-        // }
+        // 如果图片尺寸超过容器，等比例缩小
+        let stageScale = 1;
+        if (width > imgConfig.konva.containerWidth * 0.9 || height > imgConfig.konva.containerHeight * 0.9) {
+            const scaleW = imgConfig.konva.containerWidth / width * 0.9;
+            const scaleH = imgConfig.konva.containerHeight / height * 0.9;
+            stageScale = Math.min(scaleW, scaleH);
+        }
+        konvaStage.scaleX(stageScale);
+        konvaStage.scaleY(stageScale);
+        konvaStage.x((imgConfig.konva.containerWidth - width*stageScale)/2);
+        konvaStage.y((imgConfig.konva.containerHeight - height*stageScale)/2);
 
         // 绘制背景图片
-
-        // 进行模糊处理
+        if(!imgConfig.konva.bgImg){
+            const bgImg = new Konva.Image({
+                image: img,
+                width: width,
+                height: height,
+                blurRadius: blur,
+            });
+            // 进行模糊处理
+            bgImg.cache();
+            bgImg.filters([Konva.Filters.Blur]);
+            konvaLayer.add(bgImg);
+            imgConfig.konva.bgImg = bgImg;
+        }else{
+            if(imgConfig.konva.bgImg.blurRadius() !== blur){
+                imgConfig.konva.bgImg.blurRadius(blur);
+            }
+            if(imgConfig.konva.bgImg.image() !== img){
+                imgConfig.konva.bgImg.setAttrs({
+                    image: img,
+                    width: width,
+                    height: height,
+                });
+                // 进行模糊处理
+                imgConfig.konva.bgImg.cache();
+                imgConfig.konva.bgImg.filters([Konva.Filters.Blur]);
+            }
+        }
         console.log('1!');
 
         // 计算前景图片位置和大小
@@ -348,106 +371,180 @@ async function update(){
         let fgHeight = height * 0.8;
         let fgX = (width - fgWidth) / 2;
         let fgY = (height - fgHeight) * 0.25;
-        const shadowOffset = 1;  // 阴影相对于前景图的偏移量，避免边框黑边问题
-
-        // 绘制前景图片阴影
-
-        // 绘制圆角矩形路径，
-        fgX += shadowOffset;
-        fgY += shadowOffset;
-        fgWidth -= 2 * shadowOffset;
-        fgHeight -= 2 * shadowOffset;
-
-
-        // 绘制前景图片
-        fgX -= shadowOffset;
-        fgY -= shadowOffset;
-        fgWidth += 2 * shadowOffset;
-        fgHeight += 2 * shadowOffset;
-
-
+        if(!imgConfig.konva.fgImg){
+            // 绘制前景图片
+            const fgImg = new Konva.Image({
+                image: img,
+                width: fgWidth,
+                height: fgHeight,
+                x: fgX,
+                y: fgY,
+                // 绘制圆角
+                cornerRadius: radius,
+                // 绘制前景图片阴影
+                shadowColor: "#000",
+                shadowBlur: shadow,
+            });
+            konvaLayer.add(fgImg);
+            imgConfig.konva.fgImg = fgImg;
+        }else{
+            if(imgConfig.konva.fgImg.cornerRadius() !== radius){
+                imgConfig.konva.fgImg.cornerRadius(radius);
+            }
+            if(imgConfig.konva.fgImg.shadowBlur() !== shadow){
+                imgConfig.konva.fgImg.shadowBlur(shadow);
+            }
+            if(imgConfig.konva.fgImg.image() !== img){
+                imgConfig.konva.fgImg.setAttrs({
+                    image: img,
+                    width: fgWidth,
+                    height: fgHeight,
+                    x: fgX,
+                    y: fgY,
+                });
+            }
+        }
         console.log('2!');
-        // 底部文字区域
-        let widthLogo = 0;
-        let heightLogo = 0;
-        let modelTextWidth = 0;
-        let exifTextWidth = 0;
+
+        // 底部区域的中线
+        const bottomY = height * 0.925;
+        // 底部文字区域宽度
+        let groupWidth = 0;
         // 中间分割线宽度
         const lineWidth = fontSize * 0.15;
-        // 设置字体样式和大小
+        // 间隔宽度
+        const nopW = fontSize / 2;
 
-        // 设置文本基线对齐方式为中间
-
-        // 文字填充颜色
-
-        // 获取文本的宽度
-        if(modelText){
-            modelTextWidth = 0;
+        let textGroup = imgConfig.konva.textGroup;
+        if(!textGroup){
+            textGroup = new Konva.Group();
+            konvaLayer.add(textGroup);
+            imgConfig.konva.textGroup = textGroup;
         }
-        if(exifText){
-            exifTextWidth = 0;
-        }
-
-        // 品牌logo尺寸
+        // 绘制品牌logo
         if(logoImg){
-            widthLogo = logoImg.width;
-            heightLogo = logoImg.height;
+            const widthLogo = logoImg.width;
+            const heightLogo = logoImg.height;
             const logoHeightResize = fontSize / 0.45;
             const scale = logoHeightResize / heightLogo;
-            widthLogo *= scale;
-            heightLogo *= scale;
-            // full尾标的图标不进行颜色变化
+            // 非full尾标的图标才进行颜色变化
             if(!imgConfig.logoImgUrl || !imgConfig.logoImgUrl.toLowerCase().endsWith("_full.png")){
                 await convertLogoColor(logoImg, fontColor, logoHeightResize);
             }
+            const attrs = {
+                image: logoImg,
+                width: widthLogo * scale,
+                height: heightLogo * scale,
+                offsetY: heightLogo * scale * 0.25,
+            };
+            let logoImgObj = imgConfig.konva.logoImgObj;
+            if(!logoImgObj){
+                logoImgObj = new Konva.Image(attrs);
+                textGroup.add(logoImgObj);
+                imgConfig.konva.logoImgObj = logoImgObj;
+            }else{
+                logoImgObj.setAttrs(attrs);
+            }
+            groupWidth += logoImgObj.width();
         }
-
-        // 间隔宽度
-        const nopW = fontSize / 2;
-        // 底部区域的起始点
-        const bottomX = width / 2 - (widthLogo + nopW + modelTextWidth + nopW + lineWidth + nopW + exifTextWidth) / 2;
-        // 底部区域的中线
-        const bottomY = height - (height - fgHeight) * 0.375;
-        if(logoImg){
-            // 绘制logo
-            // ctx.drawImage(logoImg, bottomX, bottomY - heightLogo / 2, widthLogo, heightLogo);
-        }
+        // 绘制型号文字
         if(modelText){
-            // 绘制型号文字
-            // ctx.fillText(modelText, bottomX + widthLogo + nopW, bottomY);
+            const attrs = {
+                x: groupWidth + nopW,
+                text: modelText,
+                fontSize: fontSize,
+                fontFamily: font,
+                fill: fontColor,
+            };
+            let modelTextObj = imgConfig.konva.modelTextObj;
+            if(!modelTextObj){
+                modelTextObj = new Konva.Text(attrs);
+                textGroup.add(modelTextObj);
+                imgConfig.konva.modelTextObj = modelTextObj;
+            }else{
+                modelTextObj.setAttrs(attrs);
+            }
+            groupWidth += nopW + modelTextObj.width();
         }
+        // 绘制中间分割线
         if((modelText || logoImg) && exifText){
-            // 绘制中间分割线
-            // ctx.beginPath();
-            // ctx.lineWidth = lineWidth;
-            // ctx.moveTo(bottomX + widthLogo + nopW + modelTextWidth + nopW + lineWidth / 2, bottomY - fontSize / 2);
-            // ctx.lineTo(bottomX + widthLogo + nopW + modelTextWidth + nopW + lineWidth / 2, bottomY + fontSize / 2);
-            // ctx.strokeStyle = fontColor;
-            // ctx.stroke();
+            const attrs = {
+                points: [groupWidth + nopW, 0, groupWidth + nopW, fontSize],
+                stroke: fontColor,
+                strokeWidth: lineWidth,
+            };
+            let lineObj = imgConfig.konva.lineObj;
+            if(!lineObj){
+                lineObj = new Konva.Line(attrs);
+                textGroup.add(lineObj);
+                imgConfig.konva.lineObj = lineObj;
+            }else{
+                lineObj.setAttrs(attrs);
+            }
+            groupWidth += nopW + lineObj.width();
         }
+        // 绘制exif参数信息
         if(exifText){
-            // 绘制exif参数信息
-            // ctx.fillText(exifText, bottomX + widthLogo + nopW + modelTextWidth + nopW + lineWidth + nopW, bottomY);
+            const attrs = {
+                x: groupWidth + nopW,
+                text: exifText,
+                fontSize: fontSize,
+                fontFamily: font,
+                fill: fontColor,
+            };
+            let exifTextObj = imgConfig.konva.exifTextObj;
+            if(!exifTextObj){
+                exifTextObj = new Konva.Text(attrs);
+                textGroup.add(exifTextObj);
+                imgConfig.konva.exifTextObj = exifTextObj;
+            }else{
+                exifTextObj.setAttrs(attrs);
+            }
+            groupWidth += nopW + exifTextObj.width();
         }
-        layer.close(loadIndex);
+        textGroup.x(width / 2 - groupWidth / 2);
+        textGroup.y(bottomY - fontSize / 2);
     } catch (error) {
         console.error(error);
-        layer.close(loadIndex);
     }
     console.log('3!');
+    layer.close(loadIndex);
 }
 
-
+/**
+ * 导出当前预览区的图片
+ */
 function exportImg(){
-    // 将 Canvas 转换为数据 URL
-    const dataURL = canvas.toDataURL('image/jpg');
-
-    // 创建一个临时的下载链接
+    const index = layer.load(2);
+    // 暂存缩放和偏移
+    const scaleX = imgConfig.konva.stage.scaleX();
+    const scaleY = imgConfig.konva.stage.scaleY();
+    const x = imgConfig.konva.stage.x();
+    const y = imgConfig.konva.stage.y();
+    // 设置为原图尺寸
+    imgConfig.konva.stage.width(imgConfig.konva.fullWidth);
+    imgConfig.konva.stage.height(imgConfig.konva.fullHeight);
+    imgConfig.konva.stage.scaleX(1);
+    imgConfig.konva.stage.scaleY(1);
+    imgConfig.konva.stage.x(0);
+    imgConfig.konva.stage.y(0);
+    // 获取图片数据
+    const dataURL = imgConfig.konva.stage.toDataURL({pixelRatio: 1});
+    // 恢复预览尺寸
+    imgConfig.konva.stage.width(imgConfig.konva.containerWidth);
+    imgConfig.konva.stage.height(imgConfig.konva.containerHeight);
+    // 恢复缩放和偏移
+    imgConfig.konva.stage.scaleX(scaleX);
+    imgConfig.konva.stage.scaleY(scaleY);
+    imgConfig.konva.stage.x(x);
+    imgConfig.konva.stage.y(y);
+    // 下载图片
     const link = document.createElement('a');
     link.href = dataURL;
-    link.download = 'canvas-image.jpg'; // 设置下载文件的名称
-    // 触发下载
+    link.type = 'image/jpeg';
+    link.download = 'export-image.jpg';
     link.click();
+    layer.close(index);
 }
 
 function convertLogoColor(img, targetColor, heightResize){
@@ -457,36 +554,33 @@ function convertLogoColor(img, targetColor, heightResize){
         const scale = heightResize / height;
         width *= scale;
         height *= scale;
-        // canvasTemp.width = width;
-        // canvasTemp.height = height;
-        // ctxTemp.save();
+        canvasTemp.width = width;
+        canvasTemp.height = height;
+        ctxTemp.save();
         // 绘制背景图片
-        // ctxTemp.drawImage(img, 0, 0, width, height);
+        ctxTemp.drawImage(img, 0, 0, width, height);
         // 获取已绘制的图片，包含透明度
-        // const imageData = ctxTemp.getImageData(0, 0, canvas.width, canvas.height);
-        // const data = imageData.data;
+        const imageData = ctxTemp.getImageData(0, 0, width, height);
+        const data = imageData.data;
         // 颜色转换
-        // const color = hexToRgb(targetColor);
-        // // 遍历像素数据，将黑色转换为白色
-        // for (let i = 0; i < data.length; i += 4) {
-        //     const a = data[i + 3];
-        //     // 对于不透明的颜色转为对应的颜色
-        //     if (a > 0) {
-        //         data[i] = color.r;     // Red
-        //         data[i + 1] = color.g; // Green
-        //         data[i + 2] = color.b; // Blue
-        //     }
-        // }
-        // ctxTemp.putImageData(imageData, 0, 0);
-        // ctxTemp.restore();
-        // img.src = canvasTemp.toDataURL();
-        // img.onload = () => {
-        //     resolve();
-        // };
-        // img.onerror = () => reject(new Error('Image failed to load'));
-
-        // 临时
-        resolve();
+        const color = hexToRgb(targetColor);
+        // 遍历像素数据，将黑色转换为白色
+        for (let i = 0; i < data.length; i += 4) {
+            const a = data[i + 3];
+            // 对于不透明的颜色转为对应的颜色
+            if (a > 0) {
+                data[i] = color.r;     // Red
+                data[i + 1] = color.g; // Green
+                data[i + 2] = color.b; // Blue
+            }
+        }
+        ctxTemp.putImageData(imageData, 0, 0);
+        ctxTemp.restore();
+        img.src = canvasTemp.toDataURL();
+        img.onload = () => {
+            resolve();
+        };
+        img.onerror = () => reject(new Error('Image failed to load'));
     });
 }
 

@@ -25,6 +25,7 @@
     <!-- 左边预览区 -->
     <div id="konvaContainerBlock" class="container-left">
         <div id="konvaContainer"></div>
+        <canvas id="canvasTemp" style="display: none"></canvas>
     </div>
     <!-- 右边设置区 -->
     <div class="container-right" id="rightBlockDiv">
@@ -124,7 +125,7 @@
                             <button id="exportImgBtn" type="button" class="layui-btn layui-btn-fluid" style="background-color: #1548e6">导出当前</button>
                         </div>
                         <div style="flex: 1;margin-left: 15px">
-                            <button type="button" class="layui-btn layui-btn-fluid" style="background-color: #dc54d6">导出所有</button>
+                            <button type="button" class="layui-btn layui-btn-fluid layui-btn-disabled" style="background-color: #dc54d6">导出所有</button>
                         </div>
                     </div>
                 </div>
@@ -132,7 +133,10 @@
         </div>
         <!-- 底部版权信息和备案信息 -->
         <div class="footer-block">
-            <div><a href="https://beian.miit.gov.cn/" target="_blank">渝ICP备19008163号-2</a></div>
+            <div style="display: flex;justify-content: center;height: 24px">
+                <iframe src="https://ghbtns.com/github-btn.html?user=printlin&repo=OnlineImageWatermark&type=watch&count=false" allowtransparency="true" frameborder="0" scrolling="0" width="50px" height="20px"></iframe>
+                <a style="padding-left: 10px;padding-top: 2px;" href="https://beian.miit.gov.cn/" target="_blank">渝ICP备19008163号-2</a>
+            </div>
             <div>Copyright © 2024 lookcv.com MIT Licensed</div>
         </div>
     </div>
