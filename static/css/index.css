@@ -1,0 +1,147 @@
+/*钉钉无版权字体*/
+@font-face {
+    font-family: 'DingTalkSans';
+    src: url('../../static/fonts/DingTalkSans.ttf') format('truetype');
+    font-weight: normal;
+    font-style: normal;
+}
+
+/*修改layui面板样式*/
+.layui-panel{padding: 15px;margin-top: 10px;}
+/*修改layui表单样式*/
+.layui-form-label{width: 30px;padding-left: 0;}
+.layui-input-block{margin-left: 45px;}
+.layui-input:focus, .layui-textarea:focus {border-color: #1548e6 !important;box-shadow: 0 0 0 3px rgba(27, 95, 183, 0.08);}
+.layui-form-select dl dd.layui-this {color: #1548e6;}
+/*layer自定义弹窗按钮*/
+.layer-logo-selector .layui-layer-btn .layui-layer-btn0{background-color: #1548e6; color: #fff;}
+
+/*全屏*/
+.container-full{
+    width: 100%;
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: #333;
+}
+/*左边*/
+.container-left{
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex: 3;
+}
+/*右边*/
+.container-right{
+    flex: 1;
+    max-width: 400px;
+    min-width: 300px;
+    height: 100%;
+    background: #eee;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    cursor: default;
+}
+/*img显示区域*/
+.canvas-container{
+    max-width: 100%;
+    max-height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+}
+.canvas-container canvas{
+    max-width: 90%;
+    max-height: 90%;
+}
+/*工作区域*/
+.setting-block{
+    padding: 15px;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+/*底部版权区域*/
+.footer-block{
+    margin-top: auto;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    text-align: center;
+    padding: 10px;
+    font-size: 12px;
+}
+
+
+
+/*标题*/
+.title{font-weight: bold;font-size: 18px;line-height: 28px;font-family: 'DingTalkSans';text-align: center;}
+
+/*照片预览*/
+.img-view-item{
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+.img-view-item img {
+    max-width: 100%;
+    max-height: 100%;
+    width: auto;
+    height: auto;
+    display: block;
+}
+
+/*已选logo预览*/
+.logo-view{
+    flex: 1;
+    height: 38px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+}
+.logo-view img{
+    max-height: 100%;
+    width: auto;
+    height: auto;
+    display: block;
+}
+/*相机logo选择器*/
+.logo-selector {
+    width: 100%;
+    background-color: #fff;
+    box-sizing: border-box;
+    padding: 15px;
+}
+.logo-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+}
+.logo-item {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border: 2px solid transparent;
+    background-color: #eee;
+    border-radius: 8px;
+    overflow: hidden;
+    cursor: pointer;
+    transition: border-color 0.2s, transform 0.2s;
+    width: 50px;
+    height: 50px;
+    margin: 0 auto;
+}
+.logo-item img {
+    width: 100%;
+    max-height: 50px;
+}
+.logo-item:hover{
+    border-color: #1548e6;
+    transform: scale(1.05);
+}

@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="为您的照片添加自定义相框和水印，支持照片参数读取和批量导出，多种相框模板选择，开放多种参数自定义。">
+    <title>在线照片边框水印 | Camera Vision</title>
+    <link rel="icon" type="image/png" href="favicon.png">
+    <!-- layui -->
+    <link href="//unpkg.com/layui@2.9.14/dist/css/layui.css" rel="stylesheet">
+    <!-- 自定义样式 -->
+    <link href="./static/css/index.css" rel="stylesheet">
+
+    <!-- layui -->
+    <script src="//unpkg.com/layui@2.9.14/dist/layui.js"></script>
+    <!-- 扩展信息获取 -->
+    <script src="//unpkg.com/exif-js@2.3.0/exif.js"></script>
+    <!-- canvas操作插件 -->
+    <script src="//unpkg.com/konva@9/konva.min.js"></script>
+    <!-- 百度站点访问统计 -->
+    <script src="./static/js/baidu-hm.js"></script>
+</head>
+<body>
+<div class="container-full">
+    <!-- 左边预览区 -->
+    <div id="konvaContainerBlock" class="container-left">
+        <div id="konvaContainer"></div>
+    </div>
+    <!-- 右边设置区 -->
+    <div class="container-right" id="rightBlockDiv">
+        <!-- 设置内容 -->
+        <div class="setting-block">
+            <!-- 标题区域 -->
+            <div>
+                <div class="title">
+                    <span><img width="22" height="22" src="./static/imgs/logo_64.png" alt="logo"></span>
+                    <span>Camera Vision</span>
+                </div>
+                <div class="title">
+                    <span>在线照片边框水印</span>
+                </div>
+            </div>
+            <!-- 图片选择区域 -->
+            <div class="layui-panel">
+                <div style="margin-bottom: 15px">
+                    <input id="importImgInput" type="file" style="display: none" accept="image/*">
+                    <button id="importImgBtn" type="button" class="layui-btn layui-btn-fluid" style="background-color: #1548e6">导入照片</button>
+                </div>
+                <div class="layui-carousel" id="imgViewDiv">
+                    <div carousel-item>
+                        <div><div class="img-view-item"><img id="imgViewImg" src="./static/imgs/index.jpg"></div></div>
+                    </div>
+                </div>
+            </div>
+            <!-- 具体设置项区域 -->
+            <div class="layui-panel">
+                <div class="layui-form">
+                    <div class="layui-form-item">
+                        <label class="layui-form-label">相机</label>
+                        <div class="layui-input-block" style="display: flex">
+                            <div style="margin-right: auto">
+                                <button id="selectLogoBtn" type="button" class="layui-btn" style="background-color: #1548e6">选择LOGO</button>
+                            </div>
+                            <div class="logo-view">
+                                <img id="logoViewImg" src="./static/imgs/logo/nikon.png" alt="logo">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="layui-form-item">
+                        <label class="layui-form-label">型号</label>
+                        <div class="layui-input-block">
+                            <input type="text" id="modelInput" placeholder="请输入相机具体型号" class="layui-input">
+                        </div>
+                    </div>
+                    <div class="layui-form-item">
+                        <label class="layui-form-label">参数</label>
+                        <div class="layui-input-block">
+                            <input type="text" id="exifInput" placeholder="请输入拍摄时的参数" class="layui-input">
+                        </div>
+                    </div>
+
+                    <div class="layui-form-item">
+                        <label class="layui-form-label">字体</label>
+                        <div class="layui-input-block" style="display: flex;">
+                            <div style="flex: 1">
+                                <select lay-filter="fontSelect">
+                                    <option value="DingTalkSans" selected>DingTalkSans</option>
+                                    <option value="Arial">Arial</option>
+                                    <option value="Times New Roman">TimesNewRoman</option>
+                                    <option value="Georgia">Georgia</option>
+                                    <option value="Courier New">Courier</option>
+                                </select>
+                            </div>
+                            <div id="fontColorPicker" style="margin: 0 0 0 auto;padding-left: 15px"></div>
+                        </div>
+                    </div>
+
+                    <div class="layui-form-item" style="margin-bottom: 0">
+                        <label class="layui-form-label">字号</label>
+                        <div class="layui-input-block">
+                            <div id="fontSlider" style="padding: 17px 0"></div>
+                        </div>
+                    </div>
+                    <div class="layui-form-item" style="margin-bottom: 0">
+                        <label class="layui-form-label">圆角</label>
+                        <div class="layui-input-block">
+                            <div id="radiusSlider" style="padding: 17px 0"></div>
+                        </div>
+                    </div>
+                    <div class="layui-form-item" style="margin-bottom: 0">
+                        <label class="layui-form-label">阴影</label>
+                        <div class="layui-input-block">
+                            <div id="shadowSlider" style="padding: 17px 0"></div>
+                        </div>
+                    </div>
+                    <div class="layui-form-item">
+                        <label class="layui-form-label">虚化</label>
+                        <div class="layui-input-block">
+                            <div id="blurSlider" style="padding: 17px 0"></div>
+                        </div>
+                    </div>
+                    <div class="layui-form-item" style="display: flex;">
+                        <div style="flex: 2;">
+                            <button id="exportImgBtn" type="button" class="layui-btn layui-btn-fluid" style="background-color: #1548e6">导出当前</button>
+                        </div>
+                        <div style="flex: 1;margin-left: 15px">
+                            <button type="button" class="layui-btn layui-btn-fluid" style="background-color: #dc54d6">导出所有</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- 底部版权信息和备案信息 -->
+        <div class="footer-block">
+            <div><a href="https://beian.miit.gov.cn/" target="_blank">渝ICP备19008163号-2</a></div>
+            <div>Copyright © 2024 lookcv.com MIT Licensed</div>
+        </div>
+    </div>
+</div>
+
+<script src="./static/js/index.js"></script>
+</body>
+</html>
